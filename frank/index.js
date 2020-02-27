@@ -8,7 +8,6 @@ function draw() {
   
   background(230); 
   if (mouseIsPressed){
-    io.emit('chat message', 'hola');
     stroke(255);
   }
   else {
