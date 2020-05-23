@@ -1,38 +1,49 @@
-<!doctype html>
-<html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-      $(function () {
-        var socket = io();
-        $('form').submit(function(e){
-          e.preventDefault(); // prevents page reloading
-          socket.emit('chat message', $('#m').val());
-          $('#m').val('');
-          return false;
-        });
-        socket.on('chat message', function(msg){
-          $('#messages').append($('<li>').text(msg));
-        });
-      });
-    </script>
-  </body>
+<html> 
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+<script src="js/three.min.js"></script>
+<script src="js/dat.gui.min.js"></script>
+<script src="js/stats.min.js"></script>
+<script src="js/FBXLoader.js"></script>
+<script src="js/inflate.min.js"></script>
+
+<!-- Metal Asylum Local Javascript - map javascript files -->
+<script>
+var mobile=0;
+var verbose=0;
+var mapToDoList=``;
+</script>
+<script src="js/map_variables.js"></script>
+<script src="js/map_boot.js"></script>
+<script src="js/map_deviceFunctions.js"></script>
+<script src="js/map_coreScripts.js"></script>
+<script src="js/map_cameraControl.js"></script>
+<script src="EDIT_ME.js"></script> 
+
+<!-- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+</head>
+<style>
+	BODY{
+		margin:0px;
+		padding:0px;
+		background-color:#000000;
+		cursor:grab;
+		font-family:tahoma;
+	}
+</style>
+
+<body onLoad="boot();">
+
+<input type="file" accept="video/*" style="position:fixed; left:0px; top:0px; z-index:100" />
+
+<video id="inputVideo" style="position:absolute; top:0px;left:0px;z-index:10;display:none;" crossOrigin="use-credentials" autoplay muted playsinline loop>
+	</video>
+<canvas id="map-core" style="touch-action:none;position:fixed;top:0px;left:0px;z-index:5;background-color:#000000"></canvas>
+<div style="position:fixed;top:0px;left:0px;z-index:10;color:#fff;">
+	<div id="verbErrorConsole"></div>
+</div>
+
+</body>
 </html>
