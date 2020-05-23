@@ -119,7 +119,7 @@ function packedTextureVert(){
 		vec2 multCoord 		= unitCoord*modRes;
 		vec2 multFractCoord = fract(multCoord);
 
-		float ramp = fract(time.x)-distance(unitCoord, vec2(0.5, 0.5))*1.0;
+		float ramp = distance(unitCoord, vec2(0.5, 0.5));
 
 		vec2 center = vec2(0.0, 0.0);
 
@@ -155,6 +155,10 @@ function packedTextureVert(){
 			sum += 1.0-smoothstep(rand, rand+ 0.25, abs(multFractCoord.y));
 			sum -= smoothstep(0.4, 0.5, dist);
 		}
+
+		ramp = smoothstep(0.5, 0.3, ramp);
+
+		sum *= ramp;
 
 		height = sum;
 		vec3 pos = position + vec3(0,0,sum*depthInfluence);
@@ -216,7 +220,7 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 // Extra options in the pull down
 var packedTextureMaterial;
 function addControlOptions(){
-	datGuiParms.depthInfluence=20;
+	datGuiParms.depthInfluence=10;
 	datGui.add(datGuiParms,'depthInfluence').name("Shader Depth").min(0).max(50).step(.1).onChange(function(val){
 		packedTextureMaterial.uniforms.depthInfluence.value = Number( val );
 	});
@@ -266,8 +270,8 @@ function createVideoTextureObject(){
 	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0,-100,-100);
-	videoPlaneMesh.rotation.x=degToRad(-90);
+	videoPlaneMesh.position.set(0,-10,-100);
+	videoPlaneMesh.rotation.x=degToRad(-30);
 	videoPlaneMesh.scale.set(0,0,0);
 	
 	// Add object to scene
@@ -328,7 +332,7 @@ function mapBootEngine(){
 	inputVideo=document.getElementById("inputVideo");
 	inputVideo.onloadedmetadata=(e)=>{
 		let ratio=inputVideo.videoHeight/inputVideo.videoWidth;
-		let maxWidth=2000;
+		let maxWidth=200;
 		geoList['videoPlane'].scale.set(maxWidth, maxWidth, 1);
 		inputVideo.play();
 	}
