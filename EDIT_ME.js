@@ -1,72 +1,3 @@
-// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
-/*
-
-Hey Rolando,
-  Below you'll see 3 sections,
-    GLSL Shaders
-	Custom Options and setting up a shader on a plane
-	All other ThreeJS Renderer Engine prep
-
-  I've set up 3 custom gui pulldown options you can use easily,
-    Add more in the function -
-	  addControlOptions()
-	
-  To create a new GLSL Shader Material,
-    You can look in -
-	  createVideoTextureObject()
-	Keep in mind the variable `packedTextureMaterial` is a global for easy access
-	You could also access a material on an object with-
-	  MeshObject.material..uniforms.**UNIFORM_NAME**.value
-
- - - - - - - - - - - - -
- 
-    You can edit the default settings for depth in -
-	
-      function addControlOptions(){
-		  datGuiParms.depthInfluence=20;
-	    ...
-	  }
-
- - - - - - - - - - - - -
- 
-  ThreeJS Variable Uses --
-  ** They are treated like Javascript Array Variables **
-  ** Shared memory locations, so editing on array can change another array **
- 
-  In the shader I put below, you'll see -
-	msRunner
-  The variable is a THREE.Vector2()
-    msRunner.x = Current Second since starting
-	msRunner.y = 0
-  When it's values change, it automatically updates the uniform in the shader its used in
-  
-  The reason?
-  Updating Shader material uniform values every frame is extremely slow
-  
-  I left the custom GUI pull down options set the uniform values because they don't change much
-    Just easier to not use a THREE.Vector2() then
-
- ---
- 
-  That being said, if you ever want to make two ThreeJS variables equal each other, like
-    let var1 = new THREE.Vector3( 2, 3, 5);
-	let var2 = var1;
-	
-	var1.x=10;
-	
-  var2 will now equal {x:10, y:3, z:5};
-  
-  You can get around this by doing -
-    let var2 = var1.clone();
-	
-
-    */
-// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
-
-
-
-
-
 
 
 ///////////////////////////////////////////////////
@@ -86,6 +17,7 @@ function packedTextureVert(){
 	uniform float depthInfluence;
 	uniform float guiInput1;
 	uniform float guiInput2;
+	uniform float beatMultiplier;
 
 	varying vec2 vUvCd;
 	varying vec2 vUvAlpha;
@@ -222,7 +154,7 @@ function packedTextureVert(){
 		_multFractCoord = rotate2d( 0.25*PI ) * _multFractCoord;
 
 		float dist = distance(_multFractCoord, center);
-		float distPixellate = fract(distance(pixellate, vec2(0.5, 0.5))*distanceMultiplier-time.x);
+		float distPixellate = fract(distance(pixellate, vec2(0.5, 0.5))*distanceMultiplier-(time.x*beatMultiplier));
 
 		distPixellate *= 1.2;
 
@@ -251,17 +183,18 @@ function packedTextureVert(){
 	float shader02(vec2 _unitCoord, vec2 _multCoord, vec2 _multFractCoord, float _guiInput1){
 
 		float _sum;
-		vec2 movRate = vec2(fract(time.x), fract(time.x*5.0));
+		float timeMult = beatMultiplier*time.x;
+		vec2 movRate = vec2(fract(timeMult), fract(timeMult*5.0));
 
 		float timeStep;
 
-		if(fract(time.x) > 0.2){
+		if(fract(timeMult) > 0.2){
 
-			timeStep = floor(time.x)/2000.0;
+			timeStep = floor(timeMult)/2000.0;
 
 		} else{
 
-			timeStep = floor(time.x*1000.0)/200.0;
+			timeStep = floor(timeMult*1000.0)/200.0;
 
 		}
 
@@ -269,10 +202,6 @@ function packedTextureVert(){
 
 		vec2 pixellate = vec2( floor(_unitCoord.x * modRes.x) / modRes.x, 0.0) ;
 		float dist = distance(pixellate, center)*2.0;
-
-		//a way to interpret time from a fraction to discrete options
-
-		//float t = 1.1-(fract(-time + pixellate.x - pixellate.y )*0.4 );
 
 		float t = 1.4-(fract(random(pixellate+timeStep)*0.9 ));
 
@@ -302,8 +231,9 @@ function packedTextureVert(){
 		//this will later become presets, right now its just a way for me to remember how to initialize it
 		int rampCase = _ramp;
 
-		///int(mod(time.x, 5)) to loop presets one each second
-		int selectedPreset = int(mod(time.x, 5.0));
+		float timeMult = beatMultiplier*time.x;
+
+		int selectedPreset = int(mod(timeMult, 5.0));
 
 		float permuteVal   = _permuteVal;
 		float time1Mult    = _t1M;
@@ -317,8 +247,8 @@ function packedTextureVert(){
 
 		float ramp;
 
-		float noise = 0.55 + fbm(vec3( _unitCoord * noise1Scale, time.x *time1Mult), permuteVal);
-		noise *= 0.25 + snoise(vec3(_unitCoord * noise2Scale + 1.5, time.x*time2Mult), permuteVal);
+		float noise = 0.55 + fbm(vec3( _unitCoord * noise1Scale, timeMult *time1Mult), permuteVal);
+		noise *= 0.25 + snoise(vec3(_unitCoord * noise2Scale + 1.5, timeMult*time2Mult), permuteVal);
 
 		vec2 position = vec2(fract(_unitCoord.x*modRes.x),
 		fract(_unitCoord.y*modRes.y));
@@ -327,18 +257,18 @@ function packedTextureVert(){
 
 		if (rampCase == 0) {
 
-			ramp = clamp(fract(_unitCoord.y-time.x)-0.5, -0.1, 1.0);
+			ramp = clamp(fract(_unitCoord.y-timeMult)-0.5, -0.1, 1.0);
 			_sum = ramp*noise;
 		}
 		else if(rampCase == 1){
-			ramp = clamp(fract(_unitCoord.x-time.x)-0.5, -0.1, 1.0);
+			ramp = clamp(fract(_unitCoord.x-timeMult)-0.5, -0.1, 1.0);
 			_sum = ramp*noise;
 		}
 		else if(rampCase == 2){
 			_sum = noise;
 		}
 		else if(rampCase == 3){
-			ramp = clamp(fract(_unitCoord.x - time.x) - 0.5, -0.1, 1.0);
+			ramp = clamp(fract(_unitCoord.x - timeMult) - 0.5, -0.1, 1.0);
 			ramp = 1.0 - smoothstep(ramp, ramp + 0.2, l);
 			_sum = ramp*noise;
 
@@ -413,6 +343,7 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 	uniform float depthInfluence;
 	uniform float guiInput1;
 	uniform float guiInput2;
+	uniform float beatMultiplier;
 	
 	varying vec2 vUvCd;
 	varying vec2 vUvAlpha;
@@ -422,8 +353,20 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 	void main()
 	{
 
-		vec4 color = vec4(height, height, height, 1);
-		gl_FragColor = color;
+		vec4 color01  = vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 color02  = vec4(0.5, 0.5, 0.8, 1.0);
+		vec4 color03  = vec4(1.0, 1.0, 1.0, 1.0);
+
+		vec4 colorFinal;
+
+		if(height < 0.5){
+			colorFinal = mix(color01, color02, height*2.0);
+		} else{
+
+			colorFinal = mix(color02, color03, height*2.0-1.0);
+		}
+
+		gl_FragColor = colorFinal;
 
 	}
 
@@ -442,19 +385,29 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 // Extra options in the pull down
 var packedTextureMaterial;
 function addControlOptions(){
+	datGuiParms.rotationX=-90;
+	datGui.add(datGuiParms,'rotationX').name("Plane Rotation").min(-90).max(90).step(1).onChange(function(val){
+		geoList['videoPlane'].rotation.x = degToRad(val);
+	});
+
 	datGuiParms.depthInfluence=10;
 	datGui.add(datGuiParms,'depthInfluence').name("Shader Depth").min(0).max(50).step(.1).onChange(function(val){
 		packedTextureMaterial.uniforms.depthInfluence.value = Number( val );
 	});
 	
+	datGuiParms.guiInput2=0;
+	datGui.add(datGuiParms,'guiInput2').name("Shader Index").min(0).max(10).step(1).onChange(function(val){
+		packedTextureMaterial.uniforms.guiInput2.value = Number( val );
+	});
+
 	datGuiParms.guiInput1=0.3;
-	datGui.add(datGuiParms,'guiInput1').name("Shader input").min(0.0).max(0.7).step(0.01).onChange(function(val){
+	datGui.add(datGuiParms,'guiInput1').name("Shader Step").min(0.0).max(0.7).step(0.01).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput1.value = Number( val );
 	});
 	
-	datGuiParms.guiInput2=0;
-	datGui.add(datGuiParms,'guiInput2').name("Shader index").min(0).max(10).step(1).onChange(function(val){
-		packedTextureMaterial.uniforms.guiInput2.value = Number( val );
+	datGuiParms.beatMultiplier=1;
+	datGui.add(datGuiParms,'beatMultiplier').name("Beat Multiplier").min(0).max(3).step(0.01).onChange(function(val){
+		packedTextureMaterial.uniforms.beatMultiplier.value = Number( val );
 	});
 }
 
@@ -472,7 +425,8 @@ function createVideoTextureObject(){
 			// Menu options from the pulldown
 			depthInfluence: { type:"f", value: datGuiParms.depthInfluence },
 			guiInput1: { type:"f", value: datGuiParms.guiInput1 },
-			guiInput2: { type:"f", value: datGuiParms.guiInput2 }
+			guiInput2: { type:"f", value: datGuiParms.guiInput2 },
+			beatMultiplier: { type:"f", value: datGuiParms.beatMultiplier }
 		},
 		
 		// Your vert shader above
@@ -493,7 +447,7 @@ function createVideoTextureObject(){
 	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0,-20,-500);
+	videoPlaneMesh.position.set(0,-40,-500);
 	videoPlaneMesh.rotation.x=degToRad(-90);
 	videoPlaneMesh.scale.set(0,0,0);
 	
@@ -576,42 +530,6 @@ function mapBootEngine(){
 	createVideoTextureObject();
 	
 	
-	/*
-	// Load an image to a texture
-	//  This is using the texLoader variable but sets some texture settings
-	cloud3dTexture=map_loadTexture("assets/cloud3d.jpg", verboseLoading);
-	cloud3dTexture.minFilter.value=THREE.LinearFilter;
-	cloud3dTexture.magFilter.value=THREE.LinearFilter;
-	*/
-
-
-
-
-	/*
-	// If you want to load a custom FBX with a custom shader
-		var loadedFBX=map_loadSceneFBX("", null,'yourFBX',mapScene);
-	// After loading, you can access your fbx from the array - geoList['yourFBX'];
-	*/
-	
-	/*
-	// If you want to load a custom FBX with a custom shader
-		// Basic shader loader
-		let fbxShader=new THREE.ShaderMaterial({
-			uniforms:{
-				time:{ value:msRunner },
-				intensity: { type:"f", value: 2.0 },
-				rate: { type:"f", value: 3.0 },
-				freq: { type:"f", value: 4.0 }
-			},
-			vertexShader:shaderVert(),
-			fragmentShader:shaderFrag(),
-			transparent:true,
-			side:THREE.DoubleSide
-		});
-		// Load an FBX with your fbxShader applied to every object
-		var timesSquareFBX=map_loadSceneFBX("", fbxShader,'your',mapScene);
-		*/
-
 	///////////////////////////////////////////////////
 	// -- LIGHTS -- -- -- -- -- -- -- -- -- -- -- -- //
 	///////////////////////////////////////////////////

@@ -113,7 +113,6 @@ function mapRender(){
 		camJump(prevMS);
 	}
 	
-	
 	mapUpdateCamera();
 
 	
