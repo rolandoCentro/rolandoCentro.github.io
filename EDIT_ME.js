@@ -344,7 +344,7 @@ function packedTextureVert(){
 
 		}
 
-		_sum = step(stepVal, _sum);
+		_sum = smoothstep(stepVal, 1.0, _sum);
 
 
 		return _sum;
@@ -447,12 +447,12 @@ function addControlOptions(){
 		packedTextureMaterial.uniforms.depthInfluence.value = Number( val );
 	});
 	
-	datGuiParms.guiInput1=1;
+	datGuiParms.guiInput1=0.3;
 	datGui.add(datGuiParms,'guiInput1').name("Shader input").min(0.0).max(0.7).step(0.01).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput1.value = Number( val );
 	});
 	
-	datGuiParms.guiInput2=1;
+	datGuiParms.guiInput2=0;
 	datGui.add(datGuiParms,'guiInput2').name("Shader index").min(0).max(10).step(1).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput2.value = Number( val );
 	});
@@ -493,8 +493,8 @@ function createVideoTextureObject(){
 	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0,-10,-100);
-	videoPlaneMesh.rotation.x=degToRad(-30);
+	videoPlaneMesh.position.set(0,-20,-500);
+	videoPlaneMesh.rotation.x=degToRad(-90);
 	videoPlaneMesh.scale.set(0,0,0);
 	
 	// Add object to scene
@@ -555,7 +555,7 @@ function mapBootEngine(){
 	inputVideo=document.getElementById("inputVideo");
 	inputVideo.onloadedmetadata=(e)=>{
 		let ratio=inputVideo.videoHeight/inputVideo.videoWidth;
-		let maxWidth=200;
+		let maxWidth=1000;
 		geoList['videoPlane'].scale.set(maxWidth, maxWidth, 1);
 		inputVideo.play();
 	}
