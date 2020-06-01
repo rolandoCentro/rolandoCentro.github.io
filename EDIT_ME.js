@@ -288,7 +288,7 @@ function packedTextureVert(){
 		vUvCd = uv;
 
 		vec2 unitCoord		= vUvCd;
-		vec2 multCoord 		= unitCoord*modRes;
+		vec2 multCoord 		= unitCoord * modRes;
 		vec2 multFractCoord = fract(multCoord);
 
 		float sum;
@@ -303,7 +303,7 @@ function packedTextureVert(){
 		} else if( option == 3){
 			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 100.0, 0.0, 0.0, 1000.0, 100.0, 3);
 		} else if( option == 4){
-			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 200.0, 2.0, 500.0, 500.0, 300.0, 0);
+			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 200.0, 3.0, 500.0, 500.0, 300.0, 0);
 		} else if( option == 5){
 			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 4500.0, 10.0, 5.0, 150.0, 0.1, 2);
 		}
@@ -313,8 +313,8 @@ function packedTextureVert(){
 
 		vec3 pos = position + vec3(0,0,sum*depthInfluence);
 
-		vec4 modelViewPosition=modelViewMatrix * vec4(pos, 1.0);
-		gl_Position = projectionMatrix*modelViewPosition;
+		vec4 modelViewPosition = modelViewMatrix * vec4(pos, 1.0);
+		gl_Position = projectionMatrix * modelViewPosition;
 
 	}
 
@@ -353,9 +353,9 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 	void main()
 	{
 
-		vec4 color01  = vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 color03  = vec4(0.0, 0.0, 0.0, 1.0);
 		vec4 color02  = vec4(0.5, 0.5, 0.8, 1.0);
-		vec4 color03  = vec4(1.0, 1.0, 1.0, 1.0);
+		vec4 color01  = vec4(1.0, 1.0, 1.0, 1.0);
 
 		vec4 colorFinal;
 
@@ -384,25 +384,42 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 ///////////////////////////////////////////////////
 // Extra options in the pull down
 var packedTextureMaterial;
+var coreTextureMaterial;
+
 function addControlOptions(){
 	datGuiParms.rotationX=-90;
-	datGui.add(datGuiParms,'rotationX').name("Plane Rotation").min(-90).max(90).step(1).onChange(function(val){
+	datGui.add(datGuiParms,'rotationX').name("Floor Rotation").min(-90).max(90).step(1).onChange(function(val){
 		geoList['videoPlane'].rotation.x = degToRad(val);
 	});
 
-	datGuiParms.depthInfluence=10;
-	datGui.add(datGuiParms,'depthInfluence').name("Shader Depth").min(0).max(50).step(.1).onChange(function(val){
+	datGuiParms.depthInfluence1=0;
+	datGui.add(datGuiParms,'depthInfluence1').name("Floor Depth").min(0).max(50).step(.1).onChange(function(val){
 		packedTextureMaterial.uniforms.depthInfluence.value = Number( val );
 	});
 	
-	datGuiParms.guiInput2=0;
-	datGui.add(datGuiParms,'guiInput2').name("Shader Index").min(0).max(10).step(1).onChange(function(val){
+	datGuiParms.guiInput2=4;
+	datGui.add(datGuiParms,'guiInput2').name("Floor Index").min(0).max(10).step(1).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput2.value = Number( val );
 	});
 
-	datGuiParms.guiInput1=0.3;
-	datGui.add(datGuiParms,'guiInput1').name("Shader Step").min(0.0).max(0.7).step(0.01).onChange(function(val){
+	datGuiParms.guiInput1=0.01;
+	datGui.add(datGuiParms,'guiInput1').name("Floor Step").min(0.0).max(0.7).step(0.01).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput1.value = Number( val );
+	});
+
+	datGuiParms.depthInfluence2=0;
+	datGui.add(datGuiParms,'depthInfluence2').name("Planet Depth").min(0).max(50).step(.1).onChange(function(val){
+		coreTextureMaterial.uniforms.depthInfluence.value = Number( val );
+	});
+	
+	datGuiParms.guiInput4=1;
+	datGui.add(datGuiParms,'guiInput4').name("Planet Index").min(0).max(10).step(1).onChange(function(val){
+		coreTextureMaterial.uniforms.guiInput2.value = Number( val );
+	});
+
+	datGuiParms.guiInput3=0.3;
+	datGui.add(datGuiParms,'guiInput3').name("Planet Step").min(0.0).max(0.7).step(0.01).onChange(function(val){
+		coreTextureMaterial.uniforms.guiInput1.value = Number( val );
 	});
 	
 	datGuiParms.beatMultiplier=1;
@@ -414,16 +431,36 @@ function addControlOptions(){
 // Use the video as an input texture for a shader
 function createVideoTextureObject(){
 
+	coreTextureMaterial = new THREE.ShaderMaterial({
+		uniforms:{
+			// This is a THREE.Vector2, it automatically updates when msRunner.x is set
+			time:{ value:msRunner }, 
+			
+			// Menu options from the pulldown
+			depthInfluence: { type:"f", value: 0 },
+			guiInput1: { type:"f", value: datGuiParms.guiInput3 },
+			guiInput2: { type:"f", value: datGuiParms.guiInput4 },
+			beatMultiplier: { type:"f", value: datGuiParms.beatMultiplier }
+		},
+		
+		// Your vert shader above
+		vertexShader:packedTextureVert(),
+		
+		// Your frag shader above
+		fragmentShader:packedTextureFrag(),
+		
+		// Extra THREE.Material options --
+		transparent:true,
+		side:THREE.DoubleSide
+	});
+
 	packedTextureMaterial=new THREE.ShaderMaterial({
 		uniforms:{
 			// This is a THREE.Vector2, it automatically updates when msRunner.x is set
 			time:{ value:msRunner }, 
 			
-			// Adding a texture as a Sampler2d Uniform
-			videoFeed:{ value:vidTexture }, 
-			
 			// Menu options from the pulldown
-			depthInfluence: { type:"f", value: datGuiParms.depthInfluence },
+			depthInfluence: { type:"f", value: datGuiParms.depthInfluence2 },
 			guiInput1: { type:"f", value: datGuiParms.guiInput1 },
 			guiInput2: { type:"f", value: datGuiParms.guiInput2 },
 			beatMultiplier: { type:"f", value: datGuiParms.beatMultiplier }
@@ -447,7 +484,7 @@ function createVideoTextureObject(){
 	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0,-40,-500);
+	videoPlaneMesh.position.set(0, -1,-1100);
 	videoPlaneMesh.rotation.x=degToRad(-90);
 	videoPlaneMesh.scale.set(0,0,0);
 	
@@ -489,7 +526,7 @@ function mapBootEngine(){
 	mapEngine.setSize(mapW/mapQuality.screenResPerc, mapH/mapQuality.screenResPerc);
 	
 	mapScene=new THREE.Scene();
-	mapScene.background = new THREE.Color(0,0,0);
+	mapScene.background = new THREE.Color(1,1,1);
 	
 	var aspectRatio=mapCanvas.width/mapCanvas.height;
 	mapCam=new THREE.PerspectiveCamera(60,aspectRatio, 1, 10000);
@@ -504,12 +541,15 @@ function mapBootEngine(){
 	var transformList;
 	texLoader=new THREE.ImageLoader();
 	objRaycast=new THREE.Raycaster();
-	
+
+	//var perspectiveGeo = map_loadSceneFBX("perspectiveGeo05.fbx", null,'p01',mapScene);
+	//map_loadSceneFBX(objPath, applyShader=null,meshKey,addToScene){
+
 	// When the video object loads, set the videoTexture mesh object's height and width
 	inputVideo=document.getElementById("inputVideo");
 	inputVideo.onloadedmetadata=(e)=>{
 		let ratio=inputVideo.videoHeight/inputVideo.videoWidth;
-		let maxWidth=1000;
+		let maxWidth=2000;
 		geoList['videoPlane'].scale.set(maxWidth, maxWidth, 1);
 		inputVideo.play();
 	}
@@ -528,8 +568,52 @@ function mapBootEngine(){
 	
 	// Create the video texture object
 	createVideoTextureObject();
-	
-	
+
+	var coreGeo = new THREE.SphereBufferGeometry(2000, 64, 128);
+	var coreMesh = new THREE.Mesh( coreGeo, coreTextureMaterial );
+
+	coreMesh.rotation.set( 0.2,0,0.4);
+	coreMesh.position.set(0, 2300,-1400);
+	mapScene.add( coreMesh );
+	geoList['planet']=coreMesh;
+
+
+
+	///////// to do: new instanced geometry and projected texture for intro
+
+
+
+
+	//mapCam intro projection
+
+	var introTexture = new THREE.TextureLoader().load( "antibodyIntro.png" );
+	introTexture.format = THREE.RGBFormat;
+
+	const elements = new THREE.Group();
+	const perspectiveInstances = 70;
+	for (let i = 0; i < perspectiveInstances; i++){
+		const geometry = new THREE.IcosahedronGeometry(Math.random()*10+2);
+		const element = new THREE.Mesh(geometry, coreTextureMaterial);
+		if (i < perspectiveInstances * 0.4) {
+			element.position.x = Math.random()*100-50;
+			element.position.y = Math.random()*50-15;
+			element.position.z = Math.random()*-20-20;
+			element.scale.multiplyScalar(1.4);
+		} else {
+			element.position.x = Math.random()*150-75;
+			element.position.y = Math.random()*60-20;
+			element.position.z = Math.random()*-50-80;
+		}
+
+		element.rotation.x = Math.random()*Math.PI * 2;
+		element.rotation.y = Math.random()*Math.PI * 2;
+		element.rotation.z = Math.random()*Math.PI * 2;
+
+		elements.add(element);
+	}
+
+	mapScene.add( elements );
+
 	///////////////////////////////////////////////////
 	// -- LIGHTS -- -- -- -- -- -- -- -- -- -- -- -- //
 	///////////////////////////////////////////////////
@@ -555,3 +639,10 @@ function mapBootEngine(){
 	mapScene.add(dirLightB);
 	
 }
+
+function rotatePlanet(){
+
+	geoList['planet'].rotateY( msRunner.x*0.001);
+
+}
+

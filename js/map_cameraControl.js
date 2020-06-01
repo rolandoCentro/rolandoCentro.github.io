@@ -129,7 +129,8 @@ function mapUpdateCamera(){
 	//   Apply WASD / Arrow Key / Tap Drag movement offsets
 	let userMovement;
 	let moveLength=0;
-	let moveLengthMult=1.5;
+	//dedault moveLengthMult 1.5
+	let moveLengthMult=5;
 	let worldOffset=new THREE.Vector3(0,0,0);
 	
 	if(!mapCamBooted){
