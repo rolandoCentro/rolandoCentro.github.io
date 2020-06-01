@@ -1,26 +1,26 @@
-import * as THREE from 'three';
+import * as THREE from 'three'
 
 export default class ProjectedMaterial extends THREE.ShaderMaterial {
   constructor({ camera, texture, color = 0xffffff, ...options } = {}) {
     if (!texture || !texture.isTexture) {
-      throw new Error('Invalid texture passed to the ProjectedMaterial');
+      throw new Error('Invalid texture passed to the ProjectedMaterial')
     }
 
     if (!camera || !camera.isCamera) {
-      throw new Error('Invalid camera passed to the ProjectedMaterial');
+      throw new Error('Invalid camera passed to the ProjectedMaterial')
     }
 
     // make sure the camera matrices are updated
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
-    camera.updateWorldMatrix();
+    camera.updateProjectionMatrix()
+    camera.updateMatrixWorld()
+    camera.updateWorldMatrix()
 
     // get the matrices from the camera so they're fixed in camera's original position
-    const viewMatrixCamera = camera.matrixWorldInverse.clone();
-    const projectionMatrixCamera = camera.projectionMatrix.clone();
-    const modelMatrixCamera = camera.matrixWorld.clone();
+    const viewMatrixCamera = camera.matrixWorldInverse.clone()
+    const projectionMatrixCamera = camera.projectionMatrix.clone()
+    const modelMatrixCamera = camera.matrixWorld.clone()
 
-    const projPosition = camera.position.clone();
+    const projPosition = camera.position.clone()
 
     super({
       ...options,
@@ -30,10 +30,13 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
         viewMatrixCamera: { type: 'm4', value: viewMatrixCamera },
         projectionMatrixCamera: { type: 'm4', value: projectionMatrixCamera },
         modelMatrixCamera: { type: 'mat4', value: modelMatrixCamera },
+        // we will set this later when we will have positioned the object
+        savedModelMatrix: { type: 'mat4', value: new THREE.Matrix4() },
         projPosition: { type: 'v3', value: projPosition },
       },
 
       vertexShader: `
+          uniform mat4 savedModelMatrix;
           uniform mat4 viewMatrixCamera;
           uniform mat4 projectionMatrixCamera;
           uniform mat4 modelMatrixCamera;
@@ -44,8 +47,8 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
 
 
           void main() {
-            vNormal = mat3(modelMatrix) * normal;
-            vWorldPosition = modelMatrix * vec4(position, 1.0);
+            vNormal = mat3(savedModelMatrix) * normal;
+            vWorldPosition = savedModelMatrix * vec4(position, 1.0);
             vTexCoords = projectionMatrixCamera * viewMatrixCamera * vWorldPosition;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
           }
@@ -65,7 +68,7 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
 
           vec4 outColor = texture2D(texture, uv);
 
-          // this makes sure we don't render the texture also on the back of the object
+          // this makes sure we don't render also the back of the object
           vec3 projectorDirection = normalize(projPosition - vWorldPosition.xyz);
           float dotProduct = dot(vNormal, projectorDirection);
           if (dotProduct < 0.0) {
@@ -77,6 +80,19 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
       `,
     })
 
-    this.isProjectedMaterial = true;
+    this.isProjectedMaterial = true
   }
+}
+
+export function project(mesh) {
+  if (!mesh.material.isProjectedMaterial) {
+    throw new Error(`The mesh material must be a ProjectedMaterial`)
+  }
+
+  // make sure the matrix is updated
+  mesh.updateMatrixWorld()
+
+  // we save the object model matrix so it's projected relative
+  // to that position, like a snapshot
+  mesh.material.uniforms.savedModelMatrix.value.copy(mesh.matrixWorld)
 }

@@ -338,15 +338,11 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 
 	#define PI 3.14159265358979
 
-	uniform sampler2D videoFeed;
 	uniform vec2 time;
 	uniform float depthInfluence;
 	uniform float guiInput1;
 	uniform float guiInput2;
 	uniform float beatMultiplier;
-	
-	varying vec2 vUvCd;
-	varying vec2 vUvAlpha;
 
 	varying float height;
 
@@ -376,6 +372,66 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 }
 
 
+function projectedVert(){
+	let ret=`
+
+	uniform mat4 savedModelMatrix;
+	uniform mat4 viewMatrixCamera;
+	uniform mat4 projectionMatrixCamera;
+	uniform mat4 modelMatrixCamera;
+
+	varying vec4 vWorldPosition;
+	varying vec3 vNormal;
+	varying vec4 vTexCoords;
+
+
+	void main() {
+		vNormal = mat3(savedModelMatrix) * normal;
+		vWorldPosition = savedModelMatrix * vec4(position, 1.0);
+		vTexCoords = projectionMatrixCamera * viewMatrixCamera * vWorldPosition;
+		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+	}
+
+
+	`;
+	return ret;
+}
+
+function projectedFrag(){ // ## set gl common variables to defines
+	let ret=`
+	
+
+	uniform vec3 color;
+	uniform sampler2D texture;
+	uniform vec3 projPosition;
+
+	varying vec3 vNormal;
+	varying vec4 vWorldPosition;
+	varying vec4 vTexCoords;
+
+	void main() {
+		vec2 uv = (vTexCoords.xy / vTexCoords.w) * 0.5 + 0.5;
+
+		vec4 outColor = texture2D(texture, uv);
+
+		// this makes sure we don't render also the back of the object
+		vec3 projectorDirection = normalize(projPosition - vWorldPosition.xyz);
+		float dotProduct = dot(vNormal, projectorDirection);
+		if (dotProduct < 0.0) {
+			outColor = vec4(color, 1.0);
+		}
+
+		gl_FragColor = outColor;
+	}
+
+
+	`;
+	return ret;
+}
+
+
+
+
 
 
 
@@ -385,6 +441,7 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 // Extra options in the pull down
 var packedTextureMaterial;
 var coreTextureMaterial;
+var projectedMaterial;
 
 function addControlOptions(){
 	datGuiParms.rotationX=-90;
@@ -495,6 +552,81 @@ function createVideoTextureObject(){
 	geoList['videoPlane']=videoPlaneMesh;
 }
 
+function project(mesh) {
+
+	mesh.updateMatrixWorld();
+	mesh.material.uniforms.savedModelMatrix.value.copy(mesh.matrixWorld);
+
+}
+
+function createProjectedObject(){
+
+	mapCam.updateProjectionMatrix();
+	mapCam.updateMatrixWorld();
+	mapCam.updateWorldMatrix();
+
+	//mapCam.position.set(0,15,0);
+	//mapCam.lookAt(0,15,1000);
+
+	const viewMatrixCamera = mapCam.matrixWorldInverse.clone();
+	const projectionMatrixCamera = mapCam.projectionMatrix.clone();
+	const modelMatrixCamera = mapCam.matrixWorld.clone();
+	const projPosition = mapCam.position.clone();
+
+	var introTexture = new THREE.TextureLoader().load( "antibodyIntro.png" );
+	introTexture.minFilter=THREE.LinearFilter;
+	introTexture.magFilter=THREE.LinearFilter;
+	introTexture.format = THREE.RGBFormat;
+
+	projectedMaterial = new THREE.ShaderMaterial({
+		uniforms:{
+			time:{ value:msRunner }, 
+			
+			color: { value: new THREE.Color(0x000000) },
+			texture: { value: introTexture },
+			viewMatrixCamera: { type: 'm4', value: viewMatrixCamera },
+			projectionMatrixCamera: { type: 'm4', value: projectionMatrixCamera },
+			modelMatrixCamera: { type: 'mat4', value: modelMatrixCamera },
+			savedModelMatrix: { type: 'mat4', value: new THREE.Matrix4() },
+			projPosition: { type: 'v3', value: projPosition },
+		},
+
+		vertexShader:projectedVert(),
+		fragmentShader:projectedFrag(),
+		
+		transparent:true,
+		side:THREE.DoubleSide
+	});
+
+	const elements = new THREE.Group();
+	const perspectiveInstances = 70;
+	for (let i = 0; i < perspectiveInstances; i++){
+		const geometry = new THREE.IcosahedronGeometry(Math.random()*10+2);
+		const element = new THREE.Mesh(geometry, projectedMaterial);
+		if (i < perspectiveInstances * 0.4) {
+			element.position.x = Math.random()*100-50;
+			element.position.y = Math.random()*50-15;
+			element.position.z = Math.random()*-20-40;
+			element.scale.multiplyScalar(1.4);
+		} else {
+			element.position.x = Math.random()*150-75;
+			element.position.y = Math.random()*60-20;
+			element.position.z = Math.random()*-50-90;
+		}
+
+		element.rotation.x = Math.random()*Math.PI * 2;
+		element.rotation.y = Math.random()*Math.PI * 2;
+		element.rotation.z = Math.random()*Math.PI * 2;
+
+		project(element);
+
+		elements.add(element);
+	}
+
+	mapScene.add( elements );
+
+}
+
 
 
 
@@ -525,12 +657,11 @@ function mapBootEngine(){
 	mapEngine.setPixelRatio(window.devicePixelRatio);
 	mapEngine.setSize(mapW/mapQuality.screenResPerc, mapH/mapQuality.screenResPerc);
 	
-	mapScene=new THREE.Scene();
+	mapScene = new THREE.Scene();
 	mapScene.background = new THREE.Color(1,1,1);
 	
-	var aspectRatio=mapCanvas.width/mapCanvas.height;
-	mapCam=new THREE.PerspectiveCamera(60,aspectRatio, 1, 10000);
-	//mapCam.position.set(-20,0,15); // Camera position
+	var aspectRatio = mapCanvas.width / mapCanvas.height;
+	mapCam = new THREE.PerspectiveCamera(60,aspectRatio, 1, 10000);
 
 	
 	///////////////////////////////////////////////////
@@ -539,8 +670,8 @@ function mapBootEngine(){
 	// Texture needs
 	var textureList;
 	var transformList;
-	texLoader=new THREE.ImageLoader();
-	objRaycast=new THREE.Raycaster();
+	texLoader = new THREE.ImageLoader();
+	objRaycast = new THREE.Raycaster();
 
 	//var perspectiveGeo = map_loadSceneFBX("perspectiveGeo05.fbx", null,'p01',mapScene);
 	//map_loadSceneFBX(objPath, applyShader=null,meshKey,addToScene){
@@ -569,6 +700,8 @@ function mapBootEngine(){
 	// Create the video texture object
 	createVideoTextureObject();
 
+	createProjectedObject();
+
 	var coreGeo = new THREE.SphereBufferGeometry(2000, 64, 128);
 	var coreMesh = new THREE.Mesh( coreGeo, coreTextureMaterial );
 
@@ -578,41 +711,6 @@ function mapBootEngine(){
 	geoList['planet']=coreMesh;
 
 
-
-	///////// to do: new instanced geometry and projected texture for intro
-
-
-
-
-	//mapCam intro projection
-
-	var introTexture = new THREE.TextureLoader().load( "antibodyIntro.png" );
-	introTexture.format = THREE.RGBFormat;
-
-	const elements = new THREE.Group();
-	const perspectiveInstances = 70;
-	for (let i = 0; i < perspectiveInstances; i++){
-		const geometry = new THREE.IcosahedronGeometry(Math.random()*10+2);
-		const element = new THREE.Mesh(geometry, coreTextureMaterial);
-		if (i < perspectiveInstances * 0.4) {
-			element.position.x = Math.random()*100-50;
-			element.position.y = Math.random()*50-15;
-			element.position.z = Math.random()*-20-20;
-			element.scale.multiplyScalar(1.4);
-		} else {
-			element.position.x = Math.random()*150-75;
-			element.position.y = Math.random()*60-20;
-			element.position.z = Math.random()*-50-80;
-		}
-
-		element.rotation.x = Math.random()*Math.PI * 2;
-		element.rotation.y = Math.random()*Math.PI * 2;
-		element.rotation.z = Math.random()*Math.PI * 2;
-
-		elements.add(element);
-	}
-
-	mapScene.add( elements );
 
 	///////////////////////////////////////////////////
 	// -- LIGHTS -- -- -- -- -- -- -- -- -- -- -- -- //
