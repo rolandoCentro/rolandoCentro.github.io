@@ -1,7 +1,5 @@
-import * as THREE from 'three'
-
-export default class ProjectedMaterial extends THREE.ShaderMaterial {
-  constructor({ camera, texture, color = 0xffffff, ...options } = {}) {
+class ProjectedMaterial extends THREE.ShaderMaterial {
+  constructor({ camera, texture, color = 0xffffff, aspect, ...options } = {}) {
     if (!texture || !texture.isTexture) {
       throw new Error('Invalid texture passed to the ProjectedMaterial')
     }
@@ -27,56 +25,69 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
       uniforms: {
         color: { value: new THREE.Color(color) },
         texture: { value: texture },
+        aspect: { value : aspect},
         viewMatrixCamera: { type: 'm4', value: viewMatrixCamera },
         projectionMatrixCamera: { type: 'm4', value: projectionMatrixCamera },
         modelMatrixCamera: { type: 'mat4', value: modelMatrixCamera },
-        // we will set this later when we will have positioned the object
         savedModelMatrix: { type: 'mat4', value: new THREE.Matrix4() },
         projPosition: { type: 'v3', value: projPosition },
       },
 
       vertexShader: `
-          uniform mat4 savedModelMatrix;
-          uniform mat4 viewMatrixCamera;
-          uniform mat4 projectionMatrixCamera;
-          uniform mat4 modelMatrixCamera;
+      uniform mat4 savedModelMatrix;
+      uniform mat4 viewMatrixCamera;
+      uniform mat4 projectionMatrixCamera;
+      uniform mat4 modelMatrixCamera;
 
-          varying vec4 vWorldPosition;
-          varying vec3 vNormal;
-          varying vec4 vTexCoords;
+      varying vec4 vWorldPosition;
+      varying vec3 vNormal;
+      varying vec4 vTexCoords;
 
 
-          void main() {
-            vNormal = mat3(savedModelMatrix) * normal;
-            vWorldPosition = savedModelMatrix * vec4(position, 1.0);
-            vTexCoords = projectionMatrixCamera * viewMatrixCamera * vWorldPosition;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
+      void main() {
+        vNormal = mat3(savedModelMatrix) * normal;
+        vWorldPosition = savedModelMatrix * vec4(position, 1.0);
+        vTexCoords = projectionMatrixCamera * viewMatrixCamera * vWorldPosition;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+      `,
 
       fragmentShader: `
-        uniform vec3 color;
-        uniform sampler2D texture;
-        uniform vec3 projPosition;
+      uniform vec3 color;
+      uniform sampler2D texture;
+      uniform vec3 projPosition;
+      uniform float aspect;
 
-        varying vec3 vNormal;
-        varying vec4 vWorldPosition;
-        varying vec4 vTexCoords;
-        
-        void main() {
-          vec2 uv = (vTexCoords.xy / vTexCoords.w) * 0.5 + 0.5;
+      varying vec3 vNormal;
+      varying vec4 vWorldPosition;
+      varying vec4 vTexCoords;
 
-          vec4 outColor = texture2D(texture, uv);
+      void main() {
+        vec2 uv = (vTexCoords.xy / vTexCoords.w) * 0.5 + 0.5;
 
-          // this makes sure we don't render also the back of the object
-          vec3 projectorDirection = normalize(projPosition - vWorldPosition.xyz);
-          float dotProduct = dot(vNormal, projectorDirection);
-          if (dotProduct < 0.0) {
-            outColor = vec4(color, 1.0);
-          }
+        if(aspect > 1.0){
+          uv.x = (aspect - 1.0) * -0.5 + uv.x * aspect;
+          uv.y = 1.0 - uv.y;
+        } else {
 
-          gl_FragColor = outColor;
+          uv.y = (1.0 / aspect - 1.0) * -0.5 + (1.0 - uv.y) / aspect;
+
         }
+
+
+        vec4 outColor = texture2D(texture, uv);
+
+        // this makes sure we don't render also the back of the object
+        vec3 projectorDirection = normalize(projPosition - vWorldPosition.xyz);
+        float dotProduct = dot(vNormal, projectorDirection);
+        if (dotProduct < 0.0) {
+          outColor = vec4(color, 1.0);
+        }
+
+        //outColor = vec4(uv.x, uv.y, 0.0, 1.0);
+
+        gl_FragColor = outColor;
+      }
       `,
     })
 
@@ -84,7 +95,7 @@ export default class ProjectedMaterial extends THREE.ShaderMaterial {
   }
 }
 
-export function project(mesh) {
+function project(mesh) {
   if (!mesh.material.isProjectedMaterial) {
     throw new Error(`The mesh material must be a ProjectedMaterial`)
   }
