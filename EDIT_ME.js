@@ -380,6 +380,8 @@ var coreTextureMaterial;
 var projectedMaterial;
 var aspectRatio;
 
+var scaleGradient = 1.0;
+
 function addControlOptions(){
 	datGuiParms.rotationX=-90;
 	datGui.add(datGuiParms,'rotationX').name("Floor Rotation").min(-90).max(90).step(1).onChange(function(val){
@@ -478,7 +480,7 @@ function createVideoTextureObject(){
 	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0, -1,-1100);
+	videoPlaneMesh.position.set(0, -1,-900);
 	videoPlaneMesh.rotation.x=degToRad(-90);
 	videoPlaneMesh.scale.set(0,0,0);
 	
@@ -500,9 +502,9 @@ function createProjectedObject(){
 	introTexture.format = THREE.RGBFormat;
 
 	const elements = new THREE.Group();
-	const perspectiveInstances = 70;
+	const perspectiveInstances = 50;
 	for (let i = 0; i < perspectiveInstances; i++){
-		const geometry = new THREE.IcosahedronGeometry(Math.random()*10+2);
+		const geometry = new THREE.IcosahedronBufferGeometry(Math.random()*12+3);
 		const material = new ProjectedMaterial({
 			camera: mapCam,
 			texture: introTexture,
@@ -513,14 +515,14 @@ function createProjectedObject(){
 		const element = new THREE.Mesh(geometry, material);
 
 		if (i < perspectiveInstances * 0.4) {
-			element.position.x = Math.random()*100-50;
-			element.position.y = Math.random()*80-15;
-			element.position.z = Math.random()*-300-40;
-			element.scale.multiplyScalar(1.4);
-		} else {
-			element.position.x = Math.random()*150-75;
+			element.position.x = Math.random()*200-100;
 			element.position.y = Math.random()*100-20;
-			element.position.z = Math.random()*-50-90;
+			element.position.z = Math.random()*-200-10;
+			element.scale.multiplyScalar(3.0);
+		} else {
+			element.position.x = Math.random()*50-25;
+			element.position.y = Math.random()*80-10;
+			element.position.z = Math.random()*-140;
 		}
 
 		element.rotation.x = Math.random()*Math.PI * 2;
@@ -533,6 +535,7 @@ function createProjectedObject(){
 	}
 
 	mapScene.add( elements );
+	geoList['intro'] = elements;
 
 }
 
@@ -609,7 +612,7 @@ function mapBootEngine(){
 
 	createProjectedObject();
 
-	var coreGeo = new THREE.SphereBufferGeometry(2000, 64, 128);
+	var coreGeo = new THREE.SphereBufferGeometry(2000, 18, 18);
 	var coreMesh = new THREE.Mesh( coreGeo, coreTextureMaterial );
 
 	coreMesh.rotation.set( 0.2,0,0.4);
@@ -648,6 +651,35 @@ function mapBootEngine(){
 function rotatePlanet(){
 
 	geoList['planet'].rotateY( msRunner.x*0.001);
+
+}
+
+function introGeometry(){
+
+	if(msRunner.x > 5){
+		var ease = 0;
+		var scale = 1;
+		if(msRunner.x < 15){
+			ease = (msRunner.x - 5) / 10;
+			scale = Math.cos((ease * 3.14159) / 2);
+			ease = 1 - scale;
+
+		} else {
+			ease = 1;
+			scale = 0;
+
+		}
+
+		geoList['intro'].children.forEach(function(pChild) {
+			pChild.rotation.x += ease*0.01;
+			pChild.scale.x -= ease*0.01;
+			pChild.scale.y -= ease*0.01;
+			pChild.scale.z -= ease*0.01;
+			if(pChild.scale.x < 0){
+				geoList['intro'].remove(pChild);
+			}
+		});
+	}
 
 }
 

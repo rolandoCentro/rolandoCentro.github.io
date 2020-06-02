@@ -130,7 +130,7 @@ function mapUpdateCamera(){
 	let userMovement;
 	let moveLength=0;
 	//dedault moveLengthMult 1.5
-	let moveLengthMult=5;
+	let moveLengthMult=1.5;
 	let worldOffset=new THREE.Vector3(0,0,0);
 	
 	if(!mapCamBooted){

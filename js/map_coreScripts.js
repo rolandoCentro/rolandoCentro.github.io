@@ -115,6 +115,7 @@ function mapRender(){
 	
 	mapUpdateCamera();
 	rotatePlanet();
+	introGeometry();
 
 	
 	mapEngine.render( mapScene, mapCam);
