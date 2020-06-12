@@ -1,5 +1,5 @@
 class ProjectedMaterial extends THREE.ShaderMaterial {
-  constructor({ camera, texture, color = 0xffffff, aspect, ...options } = {}) {
+  constructor({ camera, texture, offset, aspect, ...options } = {}) {
     if (!texture || !texture.isTexture) {
       throw new Error('Invalid texture passed to the ProjectedMaterial')
     }
@@ -23,7 +23,8 @@ class ProjectedMaterial extends THREE.ShaderMaterial {
     super({
       ...options,
       uniforms: {
-        color: { value: new THREE.Color(color) },
+        time:{ value:msRunner }, 
+        offset: { value: offset },
         texture: { value: texture },
         aspect: { value : aspect},
         viewMatrixCamera: { type: 'm4', value: viewMatrixCamera },
@@ -53,14 +54,23 @@ class ProjectedMaterial extends THREE.ShaderMaterial {
       `,
 
       fragmentShader: `
-      uniform vec3 color;
+      uniform vec3 offset;
       uniform sampler2D texture;
       uniform vec3 projPosition;
       uniform float aspect;
+      uniform vec2 time;
 
       varying vec3 vNormal;
       varying vec4 vWorldPosition;
       varying vec4 vTexCoords;
+
+      vec3 color2;
+
+      float random (in vec2 _st) {
+        return fract(sin(dot(_st.xy,
+        vec2(12.9898,78.233)))*
+        43758.5453123);
+      }
 
       void main() {
         vec2 uv = (vTexCoords.xy / vTexCoords.w) * 0.5 + 0.5;
@@ -73,7 +83,7 @@ class ProjectedMaterial extends THREE.ShaderMaterial {
           uv.y = (1.0 / aspect - 1.0) * -0.5 + (1.0 - uv.y) / aspect;
 
         }
-
+        color2 = vec3(random(time.xy+offset.xy),random(time.xy+offset.xy+vec2(2,2)),random(time.xy+offset.xy+vec2(5,5)));
 
         vec4 outColor = texture2D(texture, uv);
 
@@ -81,7 +91,7 @@ class ProjectedMaterial extends THREE.ShaderMaterial {
         vec3 projectorDirection = normalize(projPosition - vWorldPosition.xyz);
         float dotProduct = dot(vNormal, projectorDirection);
         if (dotProduct < 0.0) {
-          outColor = vec4(color, 1.0);
+          outColor = vec4(color2, 1.0);
         }
 
         //outColor = vec4(uv.x, uv.y, 0.0, 1.0);
