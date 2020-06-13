@@ -1,6 +1,60 @@
 ///////////////////////////////////////////////////
 // -- GLSL SHADERS -- -- -- -- -- -- -- -- -- -- //
 ///////////////////////////////////////////////////
+function triangleHoloVert(){
+	let ret=`
+
+	precision mediump float;
+	precision mediump int;
+
+	uniform mat4 modelViewMatrix; // optional
+	uniform mat4 projectionMatrix; // optional
+
+	attribute vec3 position;
+	attribute vec4 color;
+
+	varying vec3 vPosition;
+	varying vec4 vColor;
+
+	void main()	{
+
+		vPosition = position;
+		vColor = color;
+
+		gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+	}
+
+
+	`;
+	return ret;
+}
+
+function triangleHoloFrag(){ // ## set gl common variables to defines
+	let ret=`
+	
+
+	precision mediump float;
+	precision mediump int;
+
+	uniform vec2 time;
+
+	varying vec3 vPosition;
+	varying vec4 vColor;
+
+	void main()	{
+
+		vec4 color = vec4( vColor );
+		color.r += sin( vPosition.x * 0.10 + time.x * 2.0 ) * 0.5;
+
+		gl_FragColor = color;
+
+	}
+
+
+	`;
+	return ret;
+}
 function multiTextureVert(){
 	let ret=`
 	#ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -756,6 +810,7 @@ var packedTextureMaterial;
 var coreTextureMaterial;
 var projectedMaterial;
 var voidMaterial;
+var holoMaterial;
 var aspectRatio;
 
 var scaleGradient = 1.0;
@@ -875,6 +930,101 @@ function createVideoTextureObject(){
 	
 	// For easy access from the web developer console and access through javascript
 	geoList['videoPlane'] = videoPlaneMesh;
+}
+
+function createHoloTriangles(){
+
+	var vertexCount = 200;
+
+	var geometry = new THREE.BufferGeometry();
+
+	var positions = [];
+	var colors = [];
+
+	var r = 1000;
+
+	var d = 30, d2 = d / 2;
+
+	for ( var i = 0; i < vertexCount; i ++ ) {
+
+		var x;
+		var y;
+		var z;
+
+		var rLocal = r + (Math.random()*400) - 200;
+
+		var ang = Math.random()*Math.PI*2.0;
+
+		x = rLocal * Math.sin(ang);
+		z = rLocal * Math.cos(ang);
+
+		y = Math.random() * 400 - 200;
+
+
+		var ax = x + Math.random() * d - d2;
+		var ay = y + Math.random() * d - d2;
+		var az = z + Math.random() * d - d2;
+
+		var bx = x + Math.random() * d - d2;
+		var by = y + Math.random() * d - d2;
+		var bz = z + Math.random() * d - d2;
+
+		var cx = x + Math.random() * d - d2;
+		var cy = y + Math.random() * d - d2;
+		var cz = z + Math.random() * d - d2;
+
+		positions.push( ax, ay, az );
+		positions.push( bx, by, bz );
+		positions.push( cx, cy, cz );
+
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+		colors.push( Math.random() * 255 );
+
+	}
+
+	var positionAttribute = new THREE.Float32BufferAttribute( positions, 3 );
+	var colorAttribute = new THREE.Uint8BufferAttribute( colors, 4 );
+
+	colorAttribute.normalized = true; // this will map the buffer values to 0.0f - +1.0f in the shader
+
+	geometry.setAttribute( 'position', positionAttribute );
+	geometry.setAttribute( 'color', colorAttribute );
+
+	// material
+
+	holoMaterial = new THREE.RawShaderMaterial( {
+
+		uniforms: {
+			time:{ value:msRunner }, 
+		},
+		vertexShader: triangleHoloVert(),
+		fragmentShader: triangleHoloFrag(),
+		side: THREE.DoubleSide,
+		//blending: THREE.AdditiveBlending,
+		transparent: true
+
+	} );
+
+	var mesh = new THREE.Mesh( geometry, holoMaterial );
+
+	mesh.position.set(0, 1203,-1400);
+	mesh.rotation.set( 0.2,0,0.4);
+
+	mapScene.add( mesh );
+	geoList['holoTriangles'] = mesh;
+
 }
 
 function createProjectedObject(){
@@ -1001,6 +1151,7 @@ function mapBootEngine(){
 	createVideoTextureObject();
 
 	createProjectedObject();
+	createHoloTriangles();
 
 	var coreGeo = new THREE.SphereGeometry(1200, 32, 64);
 	var coreGeo2 = new THREE.SphereGeometry(1000, 32, 64);
@@ -1057,6 +1208,7 @@ function rotatePlanet(){
 
 	geoList['cloud1'].rotateY(0.016);
 	geoList['cloud2'].rotateY(0.01);
+	geoList['holoTriangles'].rotateY(0.006);
 
 }
 
