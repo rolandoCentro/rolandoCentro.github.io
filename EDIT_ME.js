@@ -45,7 +45,7 @@ function triangleHoloFrag(){ // ## set gl common variables to defines
 	void main()	{
 
 		vec4 color = vec4( vColor );
-		color.r += sin( vPosition.x * 0.10 + time.x * 2.0 ) * 0.5;
+		color.r += sin( vPosition.x * 0.10 + time.x * 4.0 ) * 0.5;
 
 		gl_FragColor = color;
 
@@ -696,7 +696,7 @@ function sphereTextureVert(){
 
 		}
 
-		_sum = smoothstep(stepVal, 0.8, _sum);
+		_sum = smoothstep(stepVal, 0.6, _sum);
 
 		if (_unitCoord.x < 0.1){
 			ramp = _unitCoord.x * 10.0;
@@ -778,17 +778,21 @@ function sphereTextureFrag(){ // ## set gl common variables to defines
 	void main()
 	{
 
-		vec4 color01  = vec4(0.0, 0.0, 0.0, 0.0);
-		vec4 color02  = vec4(0.5, 0.5, 0.8, 0.2);
-		vec4 color03  = vec4(1.0, 1.0, 1.0, 0.5);
+		vec4 color01  = vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 color02  = vec4(0.05, 0.05, 0.07, 1.0);
+		vec4 color03  = vec4(0.1, 0.1, 0.13, 1.0);
+		vec4 color04  = vec4(0.2, 0.2, 0.25, 1.0);
 
 		vec4 colorFinal;
 
 		if(height < 0.5){
 			colorFinal = mix(color01, color02, height*2.0);
+		} else if (height < 0.9){
+
+			colorFinal = mix(color02, color03, height*2.5-1.25);
 		} else{
 
-			colorFinal = mix(color02, color03, height*2.0-1.0);
+			colorFinal = mix(color03, color04, height*10.0-9.0);
 		}
 
 		gl_FragColor = colorFinal;
@@ -799,7 +803,6 @@ function sphereTextureFrag(){ // ## set gl common variables to defines
 	`;
 	return ret;
 }
-
 
 
 ///////////////////////////////////////////////////
@@ -934,24 +937,24 @@ function createVideoTextureObject(){
 
 function createHoloTriangles(){
 
-	var vertexCount = 200;
+	var vertexCount = 400;
 
 	var geometry = new THREE.BufferGeometry();
 
 	var positions = [];
 	var colors = [];
 
-	var r = 1000;
-
-	var d = 30, d2 = d / 2;
+	var r = 1100;
 
 	for ( var i = 0; i < vertexCount; i ++ ) {
+
+		var d = 10 + Math.random()*50, d2 = d / 2;
 
 		var x;
 		var y;
 		var z;
 
-		var rLocal = r + (Math.random()*400) - 200;
+		var rLocal = r + (Math.random()*700) - 350;
 
 		var ang = Math.random()*Math.PI*2.0;
 
@@ -1153,8 +1156,8 @@ function mapBootEngine(){
 	createProjectedObject();
 	createHoloTriangles();
 
-	var coreGeo = new THREE.SphereGeometry(1200, 32, 64);
-	var coreGeo2 = new THREE.SphereGeometry(1000, 32, 64);
+	var coreGeo = new THREE.SphereGeometry(1100, 32, 64);
+	var coreGeo2 = new THREE.SphereGeometry(950, 32, 64);
 	var coreGeo3 = new THREE.SphereGeometry(900, 24, 24);
 	
 	var coreMesh = new THREE.Mesh( coreGeo, coreTextureMaterial );
@@ -1208,7 +1211,7 @@ function rotatePlanet(){
 
 	geoList['cloud1'].rotateY(0.016);
 	geoList['cloud2'].rotateY(0.01);
-	geoList['holoTriangles'].rotateY(0.006);
+	geoList['holoTriangles'].rotateY(0.001);
 
 }
 
