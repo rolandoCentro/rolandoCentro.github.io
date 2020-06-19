@@ -1237,7 +1237,7 @@ function introGeometry(){
 			geoList['intro'].scale.y += ease*0.0005;
 			geoList['intro'].scale.z += ease*0.0005;
 
-			geoList['intro'].translateZ(ease*-0.2);
+			geoList['intro'].translateZ(ease*-0.25);
 			geoList['intro'].translateY(ease*0.1);
 
 			geoList['intro'].children.forEach(function(pChild) {
@@ -1251,7 +1251,15 @@ function introGeometry(){
 					geoList['intro'].remove(pChild);
 				}
 			});
-		}
+		} 
+
+		geoList['intro'].children.forEach(function(pChild) {
+
+			pChild.rotation.y += 0.02;
+
+		});
+
+		
 	}
 
 
