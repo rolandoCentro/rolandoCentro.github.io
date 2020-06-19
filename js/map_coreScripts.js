@@ -114,7 +114,7 @@ function mapRender(){
 	}
 	
 	mapUpdateCamera();
-	rotatePlanet();
+	updateLobby();
 	introGeometry();
 
 	

@@ -351,7 +351,7 @@ function multiTextureVert(){
 		} else if( option == 1){
 			sum = shader02(unitCoord, multCoord, multFractCoord, guiInput1);
 		} else if( option == 2){
-			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 9.0, 0.1, 0.2, 120.0, 1.0, 2);
+			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 9.0, 0.1, 0.2, 22.0, 3.0, 2);
 		} else if( option == 3){
 			sum = shaderMulti(unitCoord, multCoord, multFractCoord, guiInput1, 100.0, 0.0, 0.0, 1000.0, 100.0, 3);
 		} else if( option == 4){
@@ -401,7 +401,7 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 	void main()
 	{
 
-		vec4 color01  = vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 color01  = vec4(0.01, 0.03, 0.03, 1.0);
 		vec4 color02  = vec4(0.5, 0.5, 0.8, 1.0);
 		vec4 color03  = vec4(1.0, 1.0, 1.0, 1.0);
 
@@ -824,12 +824,12 @@ function addControlOptions(){
 		geoList['videoPlane'].rotation.x = degToRad(val);
 	});
 
-	datGuiParms.depthInfluence1=5;
+	datGuiParms.depthInfluence1=0;
 	datGui.add(datGuiParms,'depthInfluence1').name("Floor Depth").min(0).max(50).step(.1).onChange(function(val){
 		packedTextureMaterial.uniforms.depthInfluence.value = Number( val );
 	});
 	
-	datGuiParms.guiInput2=1;
+	datGuiParms.guiInput2=2;
 	datGui.add(datGuiParms,'guiInput2').name("Floor Index").min(0).max(10).step(1).onChange(function(val){
 		packedTextureMaterial.uniforms.guiInput2.value = Number( val );
 	});
@@ -900,7 +900,7 @@ function createVideoTextureObject(){
 			time:{ value:msRunner }, 
 			
 			// Menu options from the pulldown
-			depthInfluence: { type:"f", value: 8 },
+			depthInfluence: { type:"f", value: 0 },
 			guiInput1: { type:"f", value: datGuiParms.guiInput1 },
 			guiInput2: { type:"f", value: datGuiParms.guiInput2 },
 			beatMultiplier: { type:"f", value: datGuiParms.beatMultiplier }
@@ -921,13 +921,15 @@ function createVideoTextureObject(){
 	// 960,540 is the x and y polygon count of the video plane
 	var videoPlaneGeo = new THREE.PlaneGeometry( 1, 1, 256,256);
 	
-	var videoPlaneMesh = new THREE.Mesh( videoPlaneGeo, packedTextureMaterial );
+	var videoPlaneMesh = new THREE.InstancedMesh( videoPlaneGeo, packedTextureMaterial, 1);
+	
+	videoPlaneMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
 	
 	// Set position and rotation
-	videoPlaneMesh.position.set(0, -1,-900);
+	videoPlaneMesh.position.set(0, -1,-3400);
 	videoPlaneMesh.rotation.x=degToRad(-90);
-	videoPlaneMesh.scale.set(0,0,0);
-	
+	videoPlaneMesh.scale.set(8000, 8000, 1);
+
 	// Add object to scene
 	mapScene.add( videoPlaneMesh );
 	
@@ -937,7 +939,7 @@ function createVideoTextureObject(){
 
 function createHoloTriangles(){
 
-	var vertexCount = 400;
+	var vertexCount = 600;
 
 	var geometry = new THREE.BufferGeometry();
 
@@ -948,21 +950,23 @@ function createHoloTriangles(){
 
 	for ( var i = 0; i < vertexCount; i ++ ) {
 
-		var d = 10 + Math.random()*50, d2 = d / 2;
-
 		var x;
 		var y;
 		var z;
 
-		var rLocal = r + (Math.random()*700) - 350;
+
+		var randomR = Math.random();
+		var rLocal = r + randomR*randomR*700;
 
 		var ang = Math.random()*Math.PI*2.0;
 
 		x = rLocal * Math.sin(ang);
 		z = rLocal * Math.cos(ang);
+		var amplitud = 900*(1-randomR*0.8);
+		y = Math.random() * amplitud - amplitud/2;
 
-		y = Math.random() * 400 - 200;
 
+		var d = 10 + Math.random()*85*(1-randomR), d2 = d / 2;
 
 		var ax = x + Math.random() * d - d2;
 		var ay = y + Math.random() * d - d2;
@@ -1022,7 +1026,7 @@ function createHoloTriangles(){
 
 	var mesh = new THREE.Mesh( geometry, holoMaterial );
 
-	mesh.position.set(0, 1203,-1400);
+	mesh.position.set(0, 1303,-3400);
 	mesh.rotation.set( 0.2,0,0.4);
 
 	mapScene.add( mesh );
@@ -1132,9 +1136,6 @@ function mapBootEngine(){
 	// When the video object loads, set the videoTexture mesh object's height and width
 	inputVideo = document.getElementById("inputVideo");
 	inputVideo.onloadedmetadata=(e)=>{
-		let ratio = inputVideo.videoHeight/inputVideo.videoWidth;
-		let maxWidth = 2000;
-		geoList['videoPlane'].scale.set(maxWidth, maxWidth, 1);
 		inputVideo.play();
 	}
 	
@@ -1167,9 +1168,9 @@ function mapBootEngine(){
 	coreMesh.rotation.set( 0.2,0,0.4);
 	coreMesh2.rotation.set( 0.4,0,0.6);
 
-	coreMesh.position.set(0, 1500,-1400);
-	coreMesh2.position.set(0, 1501,-1400);
-	coreMesh3.position.set(0, 1502,-1400);
+	coreMesh.position.set(0, 1500,-3400);
+	coreMesh2.position.set(0, 1501,-3400);
+	coreMesh3.position.set(0, 1502,-3400);
 
 	mapScene.add( coreMesh3 );
 	mapScene.add( coreMesh2 );
@@ -1207,11 +1208,17 @@ function mapBootEngine(){
 	
 }
 
-function rotatePlanet(){
+function updateLobby(){
 
-	geoList['cloud1'].rotateY(0.016);
-	geoList['cloud2'].rotateY(0.01);
-	geoList['holoTriangles'].rotateY(0.001);
+	geoList['cloud1'].rotateY(0.012);
+	geoList['cloud2'].rotateY(0.007);
+	geoList['holoTriangles'].rotateY(0.0006);
+
+	if(msRunner.x % 10.0 < 0.8){
+		packedTextureMaterial.uniforms.guiInput2.value = Math.floor(Math.random()*5);
+	}
+
+
 
 }
 
@@ -1220,28 +1227,35 @@ function introGeometry(){
 	if(msRunner.x > 5){
 		var ease = 0;
 		var scale = 1;
-		if(msRunner.x < 12){
-			ease = (msRunner.x - 5) / 7;
-			scale = Math.cos((ease * 3.14159) / 2);
+		if(msRunner.x < 15){
+			ease = (msRunner.x - 5) / 10;
+			scale = Math.cos((ease * 3.14159*2));
 			ease = 1 - scale;
 
-		} else {
-			ease = 1;
-			scale = 0;
-		}
 
-		geoList['intro'].translateZ(-ease);
-		geoList['intro'].children.forEach(function(pChild) {
-			pChild.rotation.x += ease*0.01;
-			pChild.scale.x -= ease*0.01;
-			pChild.scale.y -= ease*0.01;
-			pChild.scale.z -= ease*0.01;
-			pChild.translateZ(ease*1.5);
-			if(pChild.scale.x < 0){
-				geoList['intro'].remove(pChild);
-			}
-		});
+			geoList['intro'].scale.x += ease*0.0005;
+			geoList['intro'].scale.y += ease*0.0005;
+			geoList['intro'].scale.z += ease*0.0005;
+
+			geoList['intro'].translateZ(ease*-0.2);
+			geoList['intro'].translateY(ease*0.1);
+
+			geoList['intro'].children.forEach(function(pChild) {
+
+				pChild.rotation.x += ease*0.02*Math.random();
+				pChild.translateX(ease*-0.2*Math.random());
+				pChild.translateY(ease*-0.2*Math.random());
+				pChild.translateZ(ease*-0.2*Math.random());
+
+				if(pChild.scale.x < 0){
+					geoList['intro'].remove(pChild);
+				}
+			});
+		}
 	}
+
+
+	
 
 }
 
