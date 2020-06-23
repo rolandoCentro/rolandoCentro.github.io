@@ -1222,7 +1222,7 @@ function updateLobby(){
 	geoList['cloud2'].rotateY(0.007);
 	geoList['holoTriangles'].rotateY(0.0006);
 
-	if(msRunner.x % 5.0 < 0.8){
+	if(msRunner.x % 15.0 < 0.8){
 		packedTextureMaterial.uniforms.guiInput2.value = Math.floor(Math.random()*5);
 		flag = true;
 	} else if (flag){
