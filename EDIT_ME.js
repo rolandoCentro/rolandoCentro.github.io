@@ -401,7 +401,7 @@ function packedTextureFrag(){ // ## set gl common variables to defines
 	void main()
 	{
 
-		vec4 color01  = vec4(0.01, 0.03, 0.03, 1.0);
+		vec4 color01  = vec4(0.005, 0.015, 0.015, 1.0);
 		vec4 color02  = vec4(0.5, 0.5, 0.8, 1.0);
 		vec4 color03  = vec4(1.0, 1.0, 1.0, 1.0);
 
@@ -1045,9 +1045,9 @@ function createProjectedObject(){
 	introTexture.format = THREE.RGBFormat;
 
 	const elements = new THREE.Group();
-	const perspectiveInstances = 100;
+	const perspectiveInstances = 160;
 	for (let i = 0; i < perspectiveInstances; i++){
-		const geometry1 = new THREE.IcosahedronBufferGeometry(Math.random()*5+5.5);
+		const geometry1 = new THREE.IcosahedronBufferGeometry(Math.random()*5+7.5);
 		const geometry2 = new THREE.IcosahedronBufferGeometry(Math.random()*1+1.5);
 		const off = new THREE.Vector3(Math.random()*4,Math.random()*4,Math.random()*4);
 		const material = new ProjectedMaterial({
@@ -1062,14 +1062,14 @@ function createProjectedObject(){
 		if (i < perspectiveInstances * 0.6) {
 
 			element = new THREE.Mesh(geometry1, material);
-			element.position.x = Math.random()*100-50;
-			element.position.y = Math.random()*50;
-			element.position.z = Math.random()*-100-20;
+			element.position.x = Math.random()*50-25;
+			element.position.y = Math.random()*50-5;
+			element.position.z = Math.random()*-100-15;
 		} else {
 
 			element = new THREE.Mesh(geometry2, material);
 			element.position.x = Math.random()*16-8;
-			element.position.y = Math.random()*14+8;
+			element.position.y = Math.random()*12+8;
 			element.position.z = Math.random()*-20-4;
 		}
 
@@ -1242,10 +1242,10 @@ function introGeometry(){
 
 			geoList['intro'].children.forEach(function(pChild) {
 
-				pChild.rotation.x += ease*0.02*Math.random();
-				pChild.translateX(ease*-0.2*Math.random());
-				pChild.translateY(ease*-0.2*Math.random());
-				pChild.translateZ(ease*-0.2*Math.random());
+				pChild.rotation.z += ease*0.02*Math.random();
+				pChild.translateX(ease*-0.3*Math.random());
+				pChild.translateY(ease*-0.3*Math.random());
+				pChild.translateZ(ease*-0.3*Math.random());
 
 				if(pChild.scale.x < 0){
 					geoList['intro'].remove(pChild);
