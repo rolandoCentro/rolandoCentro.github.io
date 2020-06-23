@@ -815,6 +815,7 @@ var projectedMaterial;
 var voidMaterial;
 var holoMaterial;
 var aspectRatio;
+var flag;
 
 var scaleGradient = 1.0;
 
@@ -855,8 +856,13 @@ function addControlOptions(){
 	});
 	
 	datGuiParms.beatMultiplier=1;
-	datGui.add(datGuiParms,'beatMultiplier').name("Beat Multiplier").min(0).max(3).step(0.01).onChange(function(val){
+	datGui.add(datGuiParms,'beatMultiplier').name("Beat Multiplier").min(0).max(10).step(0.01).onChange(function(val){
 		packedTextureMaterial.uniforms.beatMultiplier.value = Number( val );
+	});
+
+	datGuiParms.preset=1;
+	datGui.add(datGuiParms,'preset').name("Preset").min(0).max(8).step(1).onChange(function(val){
+		updateFloor( Number( val ) );
 	});
 }
 
@@ -935,6 +941,8 @@ function createVideoTextureObject(){
 	
 	// For easy access from the web developer console and access through javascript
 	geoList['videoPlane'] = videoPlaneMesh;
+
+	flag = false;
 }
 
 function createHoloTriangles(){
@@ -1214,8 +1222,13 @@ function updateLobby(){
 	geoList['cloud2'].rotateY(0.007);
 	geoList['holoTriangles'].rotateY(0.0006);
 
-	if(msRunner.x % 10.0 < 0.8){
+	if(msRunner.x % 5.0 < 0.8){
 		packedTextureMaterial.uniforms.guiInput2.value = Math.floor(Math.random()*5);
+		flag = true;
+	} else if (flag){
+		let i = Math.floor(Math.random()*5.99);
+		updateFloor(i);
+		flag = false;
 	}
 
 
@@ -1261,9 +1274,71 @@ function introGeometry(){
 
 		
 	}
-
-
 	
 
 }
 
+function updateFloor(i){
+	switch(i){
+		case 0:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	6.4;
+		packedTextureMaterial.uniforms.guiInput2.value = 		5;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.17;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.1;
+		break;
+		case 1:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	38.0;
+		packedTextureMaterial.uniforms.guiInput2.value = 		3;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.01;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.2;
+		break;
+		case 2:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	38.0;
+		packedTextureMaterial.uniforms.guiInput2.value = 		2;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.4;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.9;
+		break;
+		case 3:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	6.4;
+		packedTextureMaterial.uniforms.guiInput2.value = 		4;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.03;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.15;
+		break;
+		case 4:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	47.0;
+		packedTextureMaterial.uniforms.guiInput2.value = 		0;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.03;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.15;
+		break;
+		case 5:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	1.5;
+		packedTextureMaterial.uniforms.guiInput2.value = 		3;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.7;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	1.5;
+		break;
+		case 6:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	5;
+		packedTextureMaterial.uniforms.guiInput2.value = 		0;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.7;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.2;
+		break;
+		case 7:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	0;
+		packedTextureMaterial.uniforms.guiInput2.value = 		1;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.05;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.05;
+		break;
+		case 8:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	0;
+		packedTextureMaterial.uniforms.guiInput2.value = 		2;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.05;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.2;
+		break;
+		case 9:
+		packedTextureMaterial.uniforms.depthInfluence.value = 	20;
+		packedTextureMaterial.uniforms.guiInput2.value = 		5;
+		packedTextureMaterial.uniforms.guiInput1.value = 		0.7;
+		packedTextureMaterial.uniforms.beatMultiplier.value = 	0.1;
+		break;
+	}
+}
