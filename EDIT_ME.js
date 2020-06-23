@@ -970,7 +970,7 @@ function createHoloTriangles(){
 
 		x = rLocal * Math.sin(ang);
 		z = rLocal * Math.cos(ang);
-		var amplitud = 900*(1-randomR*0.8);
+		var amplitud = 600*(1-randomR*0.8);
 		y = Math.random() * amplitud - amplitud/2;
 
 
