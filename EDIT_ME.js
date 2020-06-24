@@ -816,8 +816,11 @@ var voidMaterial;
 var holoMaterial;
 var aspectRatio;
 var flag;
+var initPos = [];
+var finalPos = [];
+var midPos = new THREE.Vector3(0,15,-50);
 
-var scaleGradient = 1.0;
+const perspectiveInstances = 160;
 
 function addControlOptions(){
 	datGuiParms.rotationX=-90;
@@ -1053,8 +1056,9 @@ function createProjectedObject(){
 	introTexture.format = THREE.RGBFormat;
 
 	const elements = new THREE.Group();
-	const perspectiveInstances = 160;
+
 	for (let i = 0; i < perspectiveInstances; i++){
+
 		const geometry1 = new THREE.IcosahedronBufferGeometry(Math.random()*5+7.5);
 		const geometry2 = new THREE.IcosahedronBufferGeometry(Math.random()*1+1.5);
 		const off = new THREE.Vector3(Math.random()*4,Math.random()*4,Math.random()*4);
@@ -1073,6 +1077,7 @@ function createProjectedObject(){
 			element.position.x = Math.random()*50-25;
 			element.position.y = Math.random()*50-5;
 			element.position.z = Math.random()*-100-15;
+
 		} else {
 
 			element = new THREE.Mesh(geometry2, material);
@@ -1092,6 +1097,19 @@ function createProjectedObject(){
 
 	mapScene.add( elements );
 	geoList['intro'] = elements;
+
+	//Tunnel
+	for (let i = 0; i < perspectiveInstances; i++){
+		initPos.push(geoList['intro'].children[i].position.clone());
+
+		let r = 50;
+		let ang = Math.random()*Math.PI*2.0;
+		let x = r * Math.sin(ang);
+		let y = r * Math.cos(ang) + 25;
+		let z = -30+(Math.random()*-600);
+
+		finalPos.push(new THREE.Vector3(x,y,z));
+	}
 
 }
 
@@ -1238,38 +1256,45 @@ function updateLobby(){
 function introGeometry(){
 
 	if(msRunner.x > 5){
-		var ease = 0;
-		var scale = 1;
-		if(msRunner.x < 15){
-			ease = (msRunner.x - 5) / 10;
-			scale = Math.cos((ease * 3.14159*2));
-			ease = 1 - scale;
+		
+		let interPos = new THREE.Vector3(0,0,0);
+
+		if(msRunner.x < 10){
+			let ease = (msRunner.x - 5) / 5;
+			ease = (1-(Math.cos(ease * 3.14159)))*0.5;
 
 
-			geoList['intro'].scale.x += ease*0.0005;
-			geoList['intro'].scale.y += ease*0.0005;
-			geoList['intro'].scale.z += ease*0.0005;
+			geoList['intro'].scale.x += ease*0.0002;
+			geoList['intro'].scale.y += ease*0.0002;
+			geoList['intro'].scale.z += ease*0.0002;
 
-			geoList['intro'].translateZ(ease*-0.25);
-			geoList['intro'].translateY(ease*0.1);
+			for(let i = 0; i < perspectiveInstances; i++) {
 
-			geoList['intro'].children.forEach(function(pChild) {
+				geoList['intro'].children[i].rotation.z += ease*0.02*Math.random();
+				interPos.lerpVectors(initPos[i], midPos, ease);
+				geoList['intro'].children[i].position.copy(interPos);
 
-				pChild.rotation.z += ease*0.02*Math.random();
-				pChild.translateX(ease*-0.3*Math.random());
-				pChild.translateY(ease*-0.3*Math.random());
-				pChild.translateZ(ease*-0.3*Math.random());
+			}
+		} 
 
-				if(pChild.scale.x < 0){
-					geoList['intro'].remove(pChild);
-				}
-			});
+		if(msRunner.x > 13 && msRunner.x < 20){
+
+			let ease = (msRunner.x - 13) / 7;
+
+			ease = (1-(Math.cos(ease * 3.14159)))*0.5;
+
+			for(let i = 0; i < perspectiveInstances; i++) {
+
+				let interPos = new THREE.Vector3(0,15,-30);
+				geoList['intro'].children[i].rotation.z += ease*0.02*Math.random();
+				interPos.lerpVectors(midPos, finalPos[i], ease);
+				geoList['intro'].children[i].position.copy(interPos);
+
+			}
 		} 
 
 		geoList['intro'].children.forEach(function(pChild) {
-
 			pChild.rotation.y += 0.02;
-
 		});
 
 		
@@ -1279,6 +1304,13 @@ function introGeometry(){
 }
 
 function updateFloor(i){
+
+	//Floor presets.
+	//-01 is Floor height
+	//-02 is the shader animation
+	//-03 is the smoothstep initial value for color and height purposes
+	//-04 is a speed multiplier first created for beat purposes, now just speed
+
 	switch(i){
 		case 0:
 		packedTextureMaterial.uniforms.depthInfluence.value = 	6.4;
